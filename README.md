@@ -2,8 +2,6 @@
 
 A full-stack MERN application designed to manage event registrations, issue secure QR-code tickets, and track venue capacity in real-time. Built with a focus on Role-Based Access Control (RBAC) and hardware-integrated ticket scanning.
 
-> **🎥 Video Demonstration:** [Insert your YouTube or Loom link here later]
-
 ---
 
 ## ✨ Core Features
