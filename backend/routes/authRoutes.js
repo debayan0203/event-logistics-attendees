@@ -3,8 +3,8 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const router = express.Router();
 
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+const generateToken = (id, role) => {
+  return jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '1d' });
 };
 
 router.post('/register', async (req, res) => {
@@ -40,7 +40,7 @@ router.post('/login', async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      token: generateToken(user._id),
+      token: generateToken(user._id, user.role),
     });
   } else {
     res.status(401).json({ message: 'Invalid email or password' });
