@@ -37,35 +37,31 @@ A full-stack MERN application designed to manage event registrations, issue secu
 To run this project locally on your machine, follow these steps:
 
 ### 1. Clone the repository
-\`\`\`bash
 git clone https://github.com/debayan0203/event-logistics-attendees.git
 cd event-logistics-attendees
-\`\`\`
 
 ### 2. Environment Variables
-Create a `.env` file in the `backend` directory and add the following:
-\`\`\`text
+Create a .env file in the backend directory and add the following:
 PORT=5000
 MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_super_secret_key
-\`\`\`
 
 ### 3. Install Dependencies & Run
 Open two separate terminal windows.
 
 **Terminal 1 (Backend):**
-\`\`\`bash
 cd backend
+
 npm install
+
 npm run dev
-\`\`\`
 
 **Terminal 2 (Frontend):**
-\`\`\`bash
 cd frontend
+
 npm install
+
 npm run dev
-\`\`\`
 
 ---
 
