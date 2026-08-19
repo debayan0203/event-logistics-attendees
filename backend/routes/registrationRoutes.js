@@ -43,7 +43,7 @@ router.get('/my-tickets', protect, authorize('Attendee'), async (req, res) => {
   }
 });
 
-// 2. Broadcast Live Update on Scan
+// 2. Targeted Room Update on Scan
 router.put('/scan/:qrId', protect, authorize('Volunteer', 'Organizer'), async (req, res) => {
   try {
     const registration = await Registration.findOne({ qrId: req.params.qrId })
@@ -57,10 +57,14 @@ router.put('/scan/:qrId', protect, authorize('Volunteer', 'Organizer'), async (r
     registration.checkInTime = Date.now();
     await registration.save();
 
-    // Trigger the WebSocket event
+    // Trigger the WebSocket event specifically to the event room
     const io = req.app.get('io');
     if (io) {
-      io.emit('newCheckIn', { eventId: registration.event._id, attendeeName: registration.attendee.name });
+      // We convert the MongoDB ObjectId to a standard string
+      const roomId = registration.event._id.toString();
+      
+      // We use .to(roomId) to target only the specific room!
+      io.to(roomId).emit('newCheckIn', { eventId: roomId, attendeeName: registration.attendee.name });
     }
 
     res.json({ message: 'Check-in successful', attendee: registration.attendee.name, event: registration.event.name });

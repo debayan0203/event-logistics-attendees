@@ -24,8 +24,19 @@ const io = new Server(server, {
 // Make 'io' available inside your routes
 app.set('io', io);
 
+// Updated Socket.io Room Logic
 io.on('connection', (socket) => {
-  console.log('Client connected for live updates');
+  console.log(`Client connected for live updates: ${socket.id}`);
+
+  // Listen for the frontend telling us which event dashboard they opened
+  socket.on('join-event', (eventId) => {
+    socket.join(eventId);
+    console.log(`Socket ${socket.id} joined room for event: ${eventId}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`Client disconnected: ${socket.id}`);
+  });
 });
 
 app.use('/api/auth', require('./routes/authRoutes'));

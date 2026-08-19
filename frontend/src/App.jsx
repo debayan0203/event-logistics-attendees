@@ -3,13 +3,19 @@ import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import OrganizerDashboard from './pages/OrganizerDashboard';
 import AttendeeDashboard from './pages/AttendeeDashboard';
-import VolunteerScanner from './pages/VolunteerScanner'; // <-- Added
+import VolunteerScanner from './pages/VolunteerScanner';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 const App = () => {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<Login />} />
+        
+        {/* Public Password Reset Routes */}
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/resetpassword/:token" element={<ResetPassword />} />
         
         <Route 
           path="/organizer" 
@@ -24,7 +30,7 @@ const App = () => {
           path="/scanner" 
           element={
             <ProtectedRoute allowedRoles={['Volunteer']}>
-              <VolunteerScanner /> {/* <-- Updated */}
+              <VolunteerScanner />
             </ProtectedRoute>
           } 
         />

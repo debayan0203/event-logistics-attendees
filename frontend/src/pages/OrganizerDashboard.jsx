@@ -27,21 +27,31 @@ const OrganizerDashboard = () => {
     }
   };
 
+  // 1. Fetch data when the component mounts
   useEffect(() => {
     fetchData();
+  }, []);
 
-    // Initialize WebSocket
+  // 2. Initialize WebSocket ONLY after events are loaded
+  useEffect(() => {
+    if (events.length === 0) return;
+
     const socket = io('http://localhost:5000');
     
+    // Loop through every event and knock on the specific room doors
+    events.forEach(event => {
+      socket.emit('join-event', event._id);
+    });
+    
+    // Listen for targeted updates
     socket.on('newCheckIn', (data) => {
-      // Increment the live counter without refreshing the page
       setStats(prev => ({ ...prev, totalCheckedIn: prev.totalCheckedIn + 1 }));
       setLiveAlert(`${data.attendeeName} just checked in!`);
       setTimeout(() => setLiveAlert(''), 4000);
     });
 
     return () => socket.disconnect();
-  }, []);
+  }, [events]); // If the organizer creates a new event, this re-runs so they join the new room!
 
   const handleCreateEvent = async (e) => {
     e.preventDefault();
@@ -53,7 +63,7 @@ const OrganizerDashboard = () => {
       await API.post('/events', payload);
       setMessage({ type: 'success', text: 'Event published successfully!' });
       setFormData({ name: '', date: '', venue: '', capacity: '', imageUrl: '' });
-      fetchData();
+      fetchData(); // This will update the events array, triggering the WebSocket to rejoin rooms
     } catch (error) {
       setMessage({ type: 'error', text: error.response?.data?.message || 'Failed to create event' });
     }
@@ -68,7 +78,7 @@ const OrganizerDashboard = () => {
     <div className="min-h-screen bg-gray-50">
       <header className="flex justify-between items-center px-8 py-4 border-b border-gray-200 bg-white sticky top-0 z-10 shadow-sm">
         <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">EventPulse Hub</h1>
+          <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">VenueSync Hub</h1>
           {liveAlert && (
             <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold animate-pulse">
               🟢 {liveAlert}

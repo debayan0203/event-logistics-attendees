@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom'; // <-- Added Link here
 import { z } from 'zod';
 import useAuthStore from '../store/authStore';
 import API from '../api/axios';
@@ -118,6 +118,18 @@ const Login = () => {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-6 py-4 bg-white rounded-full text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-900 font-medium placeholder-gray-400"
             />
+            
+            {/* <-- Added Forgot Password Link Here --> */}
+            {isLogin && (
+              <div className="flex justify-end mt-2 px-2">
+                <Link 
+                  to="/forgot-password" 
+                  className="text-sm font-bold text-gray-700 hover:text-gray-900 transition-colors"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+            )}
           </div>
 
           {!isLogin && (
@@ -154,7 +166,8 @@ const Login = () => {
           {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
         </button>
         <p className="text-[11px] text-gray-400 mt-3 font-medium">
-          EventPulse Secure Authentication &bull; Terms & Conditions Apply
+          {/* <-- Updated Branding Here --> */}
+          VenueSync Secure Authentication &bull; Terms & Conditions Apply
         </p>
       </div>
     </div>
