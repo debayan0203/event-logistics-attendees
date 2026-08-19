@@ -4,6 +4,7 @@ const cors = require('cors');
 const connectDB = require('./config/db');
 const http = require('http');
 const { Server } = require('socket.io');
+const rateLimit = require('express-rate-limit');
 
 dotenv.config();
 connectDB();
@@ -12,11 +13,20 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// FinTech Security: Rate limiter to protect auth routes from brute-force/DDoS
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // Limit each IP to 20 requests per windowMs
+  message: { message: 'Too many requests from this IP, please try again after 15 minutes' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Wrap Express with HTTP and initialize Socket.io
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173", // Your Vite frontend
+    origin: "http://localhost:5173",
     methods: ["GET", "POST", "PUT"]
   }
 });
@@ -28,7 +38,6 @@ app.set('io', io);
 io.on('connection', (socket) => {
   console.log(`Client connected for live updates: ${socket.id}`);
 
-  // Listen for the frontend telling us which event dashboard they opened
   socket.on('join-event', (eventId) => {
     socket.join(eventId);
     console.log(`Socket ${socket.id} joined room for event: ${eventId}`);
@@ -39,7 +48,8 @@ io.on('connection', (socket) => {
   });
 });
 
-app.use('/api/auth', require('./routes/authRoutes'));
+// Apply rate limiter specifically to auth routes
+app.use('/api/auth', authLimiter, require('./routes/authRoutes'));
 app.use('/api/events', require('./routes/eventRoutes'));
 app.use('/api/registrations', require('./routes/registrationRoutes'));
 

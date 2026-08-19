@@ -1,36 +1,58 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose'); // Required for sessions/transactions
 const Registration = require('../models/Registration');
 const Event = require('../models/Event');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const crypto = require('crypto');
 
-// 1. Capacity Control added to Registration
+// 1. ACID Transaction for Ticket Registration (Prevents Race Conditions / Overbooking)
 router.post('/:eventId', protect, authorize('Attendee'), async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
-    const event = await Event.findById(req.params.eventId);
-    if (!event) return res.status(404).json({ message: 'Event not found' });
+    // Bind all queries to the active session transaction
+    const event = await Event.findById(req.params.eventId).session(session);
+    if (!event) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(404).json({ message: 'Event not found' });
+    }
 
     // Check if user already registered
-    const existing = await Registration.findOne({ event: req.params.eventId, attendee: req.user._id });
-    if (existing) return res.status(400).json({ message: 'You are already registered for this event.' });
+    const existing = await Registration.findOne({ event: req.params.eventId, attendee: req.user._id }).session(session);
+    if (existing) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({ message: 'You are already registered for this event.' });
+    }
 
-    // Check Capacity
-    const currentCount = await Registration.countDocuments({ event: req.params.eventId });
+    // Check Capacity within the locked session
+    const currentCount = await Registration.countDocuments({ event: req.params.eventId }).session(session);
     if (currentCount >= event.capacity) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(400).json({ message: 'Sorry, this event is completely sold out.' });
     }
 
     const qrId = crypto.randomBytes(16).toString('hex');
-    const registration = await Registration.create({
+    const registration = await Registration.create([{
       event: req.params.eventId,
       attendee: req.user._id,
       qrId
-    });
+    }], { session });
 
-    res.status(201).json(registration);
+    // Commit the transaction atomically
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(201).json(registration[0]);
   } catch (error) {
-    res.status(500).json({ message: 'Server Error' });
+    // If anything fails, rollback completely
+    await session.abortTransaction();
+    session.endSession();
+    res.status(500).json({ message: 'Server Error during transaction' });
   }
 });
 
@@ -60,10 +82,7 @@ router.put('/scan/:qrId', protect, authorize('Volunteer', 'Organizer'), async (r
     // Trigger the WebSocket event specifically to the event room
     const io = req.app.get('io');
     if (io) {
-      // We convert the MongoDB ObjectId to a standard string
       const roomId = registration.event._id.toString();
-      
-      // We use .to(roomId) to target only the specific room!
       io.to(roomId).emit('newCheckIn', { eventId: roomId, attendeeName: registration.attendee.name });
     }
 
